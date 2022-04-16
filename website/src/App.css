@@ -1,0 +1,168 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+.App {
+  text-align: center;
+  font-family: 'Inter', sans-serif;
+}
+
+.App-header {
+  background-color: #E5E5E5;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(10px + 2vmin);
+  color: white;
+}
+
+.Panel {
+  background-color: #EFEFEF;
+  border-radius: 10px 10px 10px 10px;
+  width: 22.5%;
+  display: flex;
+  min-height: 100vh;
+  position: relative;
+}
+
+.midPanel {
+  width: 55%;
+  margin: auto;
+  min-height: 100vh;
+  position: relative;
+}
+
+#left {
+  float: left;
+}
+
+#right {
+  float: right;
+}
+
+.Resources {
+  position: absolute;
+  width: 75%;
+  height: 38vh;
+  bottom: 20vh;
+  left: 12.5%;
+  background-color: #FFFFFF;
+  border-radius: 10px 10px 10px 10px;
+}
+
+.Control {
+  background-color: #CC0033;
+  color: #FFFFFF;
+  width: 100%;
+  height: 5.55%;
+  line-height: 5vh;
+  float: left;
+  position: absolute;
+  text-align: center;
+  vertical-align: center;
+  font-weight: 600;
+}
+
+#feedback {
+  bottom: 11.4%;
+  border-radius: 10px 10px 0px 0px;
+}
+
+#support {
+  bottom: 5.70%;
+}
+
+#logout {
+  bottom: 0;
+}
+
+.midBottomPanel {
+  background-color: #F6F6F6;
+  position: absolute;
+  height: 10vh;
+  width: 100%;
+  bottom: 0;
+}
+
+#input {
+  position: absolute;
+  outline: none;
+  bottom: 2vh;
+  left: 5%;
+  width: 80%;
+  height: 5.5vh;
+  border-radius:10px 10px 10px 10px;
+  padding-left: 1vw;
+  border: none;
+}
+
+#input:focus {
+  border: 2px solid #EFEFEF;
+}
+
+#send { 
+  position: absolute;
+  bottom: 1.5vh;
+  left: 90%;
+  height: 60%;
+}
+
+.ResourcesTable {
+  background-color: #FFFFFF;
+  border: 1px solid #676767;
+  border-left: none;
+  border-right: none;
+}
+
+#resourcesHeader {
+  font-size: 2vh;
+  text-align: left;
+  padding-left: 1vw;
+  padding-top: 1.5vh;
+  font-weight: 800;
+  height: 3.5vh;
+  border-top: none;
+  border-radius: 10px 10px 0px 0px; 
+}
+
+#resourcesLink {
+  font-size: 1.5vh;
+  text-align: left;
+  padding-left: 1vw;
+  padding-top: 1vh;
+  height: 3vh;
+}
+
+#resourcesLastLink {
+  font-size: 1.5vh;
+  text-align: left;
+  padding-left: 1vw;
+  padding-top: 1vh;
+  height: 3vh;
+  border-bottom: none;
+  border-radius: 0px 0px 10px 10px;
+}
+
+a {
+  color: #0645AD;
+}
+
+.UserInfo {
+  position: absolute;
+  font-size: 2vh;
+  top: 27vh;
+  left: 6.25vw;
+}
+
+.title {
+  position: absolute;
+  top: 5vh;
+  left: 5vw;
+  font-size: 2vh;
+}
+
+#rutgersLogo {
+  position: absolute;
+  top: -1vh;
+  left: -2.5vw;
+  height: 4vh;
+}
