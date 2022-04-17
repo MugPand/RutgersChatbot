@@ -5,6 +5,9 @@ Course planning is a difficult task that students face every semester. Composed 
 
 The focus of our research was on creating a generalizable system for automated conversation on advising topics; our tests focused on the Computer Science Major & Minor, and the newly introduced Data Science Certificate & Minor.
 
+![Design Mockup](designMockup.png)
+
+
 ## Background
 
 We started with a conversational A.I. system that used matches between inputs and a list of response functions. This system included some simple conversation (“Hello”, “Goodbye”, “How are you? ”), basic course recommendation, and information retrieval. 
@@ -16,6 +19,8 @@ Our goal was to extend the capabilities of the chatbot into a more comprehensive
 - We have utilized Python, and external libraries such as SpaCy, Scikit Learn, and Pandas to develop a chatbot capable of interacting with users. 
 - We we were able to scrape Rutgers websites for course information and build a database using SQL.
 - For the user-interface, we worked with the Flask and React frameworks to present the chatbot in an environment similar to its real-world use case.
+
+![System Design](systemDesign.png)
 
 ## Future Direction:
 - Broader & more complex questions and responses
