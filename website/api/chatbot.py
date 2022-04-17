@@ -89,7 +89,7 @@ def calc_prereqs(taken, check_course):
     return ret
 
 # %%
-database = pd.read_csv('../../CSClass_info.csv')
+database = pd.read_csv('../../database/CSClass_info.csv')
 print(database)
 def retrieve(course, identifier):
     i = database[(database['Course Number']==course)]
