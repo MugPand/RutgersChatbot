@@ -104,6 +104,10 @@
   bottom: 1.5vh;
   left: 90%;
   height: 60%;
+  border: none;
+  outline: none;
+  padding: 0;
+  background: none;
 }
 
 .ResourcesTable {
@@ -165,4 +169,51 @@ a {
   top: -1vh;
   left: -2.5vw;
   height: 4vh;
+}
+
+.messageField {
+  position: absolute;
+  height: 90vh;
+  width: 55vw;
+  overflow: scroll;
+  overflow-x: hidden;
+}
+
+.message {
+  font-size: 1.5vh;
+  font-weight: 100;
+  padding: 1.5vh;
+  color: #FFFFFF;
+  display: relative;
+  max-width: 15vw;
+  display: block;
+  margin-top: 5vh;
+  flex-wrap: wrap;
+}
+
+.userMessageContainer {
+  width: 70%;
+  display: block;
+  float: right;
+}
+
+.chatbotMessageContainer {
+  width: 50%;
+  display: block;
+  float: left;
+}
+
+
+#chatbotMessage {
+  margin-left: 4vh;
+  background-color: #CC0033;
+  float: left;
+  border-radius: 18px 18px 18px 4px;
+}
+
+#userMessage {
+  margin-right: 4vh;
+  background-color: #000000;
+  float: right;
+  border-radius: 18px 18px 4px 18px;
 }

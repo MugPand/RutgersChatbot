@@ -1,3 +1,0 @@
-import chatbot
-
-chatbot.run()
