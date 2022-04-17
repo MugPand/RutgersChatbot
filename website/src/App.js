@@ -1,7 +1,7 @@
 import './App.css';
-import send from './bi_arrow-down-circle-fill.png'
 import userIcon from './healthicons_ui-user-profile.png'
 import rutgersLogo from './rutgersLogo.png'
+import Message from './components/Message'
 
 function App() {
   return (
@@ -30,12 +30,8 @@ function App() {
       </div>
 
       <div className="midPanel">
-        <div className="midBottomPanel">
-          <form className="form" method="POST">
-            <input type="text" id="input" name="input" placeholder="Type a message to RU Chatbot"></input>
-            <input type="image" id="send" src={send} alt="Send Message"/>
-          </form>
-        </div>
+        <Message/>
+
       </div>
 
     </div>
