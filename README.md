@@ -1,5 +1,7 @@
 # RutgersChatbot
 
+A conversational A.I. built for Rutgers Course Planning. Developed by an Interdisciplinary Research Team comprised of Mugdhesh Pandkar, Nicole Ross, Nehal Thakkar, Swapneil Singh, Bianca Caproni, Aisha Humaira, and Vanessa Chin, under the guidance of Dr. Matthew Stone.
+
 ## Abstract
 Course planning is a difficult task that students face every semester. Composed of verifying prerequisites, major/minor requirements, and the difficulty of their classes, students often turn to academic advisors with many of their questions. Advisors are often overwhelmed by the quantity of these questions when the majority can be answered through online resources. Our project explores the automation of these advising tasks with a conversational AI system. 
 
