@@ -16,14 +16,14 @@ import sklearn.ensemble
 import sklearn.preprocessing
 
 trueoriginal = sys.stdout
-outfile = '../../out.txt'
-databasefile = '../../CSClass_info.csv'
+outfile = '../../database/out.txt'
+databasefile = '../../database/CSClass_info.csv'
 courseregex = r"\d{2}:\d{3}:\d{3}"
 coursematcher = re.compile(courseregex)
 
 
-outfile = '/content/drive/MyDrive/IRTStuff/out.txt'
-databasefile = '/content/drive/MyDrive/IRT/CSClass_info.csv'
+# outfile = '/content/drive/MyDrive/IRTStuff/out.txt'
+#databasefile = '/content/drive/MyDrive/IRT/CSClass_info.csv'
 
 
 
@@ -173,23 +173,23 @@ def courseaccess(state):
     state.courselist = state.courselist if state.courselist else []
     courselist = state.courselist
     x = input()
-    while x != '':
+    while x != 'done':
         courselist.append(x)
         x = input()
     fakeprint(state, "Ok, thanks! I'll remember those courses")
 
 def cantake(state):
+    print("test")
     if not state.courselist:
       fakeprint(state, "I don't know what courses you have, I'm afraid. What are they?")
       state.setQuery(queries['courses'])
       courseaccess(state)
       state.setQuery(queries['cantake'])
-
     fakeprint(state, 'your current courses are', state.courselist)
     prereqs = calc_prereqs(state.courselist, coursematcher.findall(state.inputhistory[-1])[-1])
     # fakeprint(state, "So, I have no idea whether you can take this one!")
     fakeprint(state, 'You can take this course!' if len(prereqs) == 0 else 'You still need '+str(prereqs))
-
+    return
 # %%
 nlp = spacy.load("en_core_web_lg")
 
@@ -581,11 +581,11 @@ def run():
     return s
 
 # %%
-currstate = run()
-print(currstate.inputhistory)
-print(currstate.outputhistory)
-print(currstate.qhistory)
-print(currstate.courselist)
+
+# currstate = run()
+# print(currstate.inputhistory)
+# print(currstate.outputhistory)
+# print(currstate.courselist)
 
 # # %%
 # tempvar = "Tell me about Data Structures"
@@ -785,7 +785,6 @@ print(currstate.courselist)
 # # %%
 # # define basic node class for course suggestion tree
 # class Node(object):
-
 #     def __init__(self, val):
 #         self.val = val
 #         self.children = []
@@ -847,6 +846,7 @@ print(currstate.courselist)
 #                     # update_state(child, state)
 #                     plans.append(child)
 #                     break
+
 
 #         # information retrieval "tell me information about X"
 #         # infoRetrievalRules = ["information", "tell me", "describe"]
