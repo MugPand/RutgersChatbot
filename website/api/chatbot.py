@@ -19,6 +19,7 @@ trueoriginal = sys.stdout
 outfile = '../../out.txt'
 databasefile = '../../CSClass_info.csv'
 courseregex = r"\d{2}:\d{3}:\d{3}"
+coursematcher = re.compile(courseregex)
 
 
 outfile = '/content/drive/MyDrive/IRTStuff/out.txt'
@@ -438,19 +439,25 @@ queries = {'greeting': Query('greeting',
                                 'What course can I swap for Discrete?'],
                                lambda state: fakeprint(state, "I have no idea, I'm not a person! Advisors are, though!")),
            'cantake': Query('cantake',
-                            ['Can I take 01:198:205',
-                             'Can I take 01:198:206',
-                             'Can I register for 01:198:206',
+                            ['Can I take 01:198:205?',
+                             'Can I take 01:198:206?',
+                             'Can I register for 01:198:206?',
                              'Is it possible to take 01:198:205?'],
                             lambda state: cantake(state)),
            'info': Query('info',
                          ['Tell me about 01:198:105',
+                          'Can you tell me about 01:198:101?',
                           'Can you tell me about 01:198:101'],
-                         lambda state: (fakeprint(state, *(state.inputhistory[-1][14:],
-                                                          'name: ' + str(retrieve(state.inputhistory[-1].split(' ')[-1], 'Name')),
-                                                          'credits: ' + str(retrieve(state.inputhistory[-1].split(' ')[-1], 'Credits')),
-                                                          'professor:'+ str(retrieve(state.inputhistory[-1].split(' ')[-1], 'Professor'))))
-                         if [retrieve(state.inputhistory[-1].split(' ')[-1], x) for x in ['Name', 'Credits', 'Professor']] != [None, None, None] else
+                         lambda state: (fakeprint(state, *(coursematcher.findall(state.inputhistory[-1])[-1],
+                                                           '\n name: ' + str(retrieve(coursematcher.findall(state.inputhistory[-1])[-1], 'Name')),
+                                                           '\n credits: ' + str(retrieve(coursematcher.findall(state.inputhistory[-1])[-1], 'Credits')),
+                                                           '\n professor: ' + str(retrieve(coursematcher.findall(state.inputhistory[-1])[-1], 'Professor'))
+                                                          # 'name: ' + str(retrieve(state.inputhistory[-1].split(' ')[-1], 'Name')),
+                                                          # 'credits: ' + str(retrieve(state.inputhistory[-1].split(' ')[-1], 'Credits')),
+                                                          # 'professor:'+ str(retrieve(state.inputhistory[-1].split(' ')[-1], 'Professor'))
+                                                          ))
+                         if coursematcher.search(state.inputhistory[-1])
+                         and [retrieve(state.inputhistory[-1].split(' ')[-1], x) for x in ['Name', 'Credits', 'Professor']] != [None, None, None] else
                          fakeprint(state, "I'm afraid this course doesn't exist"),
                          None if len(state.qhistory)<=1 else state.setQuery(state.qhistory[-2]))),
            'courses': Query('courses',
