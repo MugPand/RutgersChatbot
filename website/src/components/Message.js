@@ -129,7 +129,7 @@ class Message extends React.Component
                 </div>
                 <div className="midBottomPanel">
             <div style={{height:'2vh'}}>
-                <input type='text' name='input' 
+                <input type='text' name='input' placeholder='Type a message to RU Chatbot '
                     onChange={(e)=>this.handleChange(e)} 
                     id="input"
                     value={this.state.msg} />

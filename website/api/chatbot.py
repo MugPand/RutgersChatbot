@@ -19,7 +19,7 @@ import sklearn.preprocessing
 
 # %%
 def calc_prereqs(taken, check_course):
-    data=pd.read_csv('../../CSClass_info.csv')
+    data=pd.read_csv('../../database/CSClass_info.csv')
     row = data['Course Number']
     # print(row)
     tempPrereq = data.loc[data['Course Number']==check_course]['Prereq Info']     #from database
@@ -127,21 +127,23 @@ def courseaccess(state):
     state.courselist = state.courselist if state.courselist else []
     courselist = state.courselist
     x = input()
-    while x != '':
+    while x != 'done':
         courselist.append(x)
         x = input()
     fakeprint(state, "Ok, thanks! I'll remember those courses")
 
 def cantake(state):
+    print("test")
     if not state.courselist:
       fakeprint(state, "I don't know what courses you have, I'm afraid. What are they?")
-      courseaccess(state)
+      return
+    # #   courseaccess(state)
     
     fakeprint(state, 'your current courses are', state.courselist)
     prereqs = calc_prereqs(state.courselist, state.inputhistory[-1].split(' ')[-1].replace('?','').replace('.',''))
     # fakeprint(state, "So, I have no idea whether you can take this one!")
     fakeprint(state, 'You can take this course!' if len(prereqs) == 0 else 'You still need '+str(prereqs))
-
+    return
 # %%
 nlp = spacy.load("en_core_web_lg")
 
