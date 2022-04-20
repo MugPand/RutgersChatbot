@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import re
 import sys
+import os
 import spacy
 import random
 import math
@@ -14,12 +15,29 @@ import sklearn.neighbors
 import sklearn.ensemble
 import sklearn.preprocessing
 
+trueoriginal = sys.stdout
+outfile = '../../database/out.txt'
+databasefile = '../../database/CSClass_info.csv'
+courseregex = r"\d{2}:\d{3}:\d{3}"
+coursematcher = re.compile(courseregex)
+
+
+# outfile = '/content/drive/MyDrive/IRTStuff/out.txt'
+#databasefile = '/content/drive/MyDrive/IRT/CSClass_info.csv'
+
+
+
+# if os.path.exists(str(outfile)):
+#     os.remove(outfile)
+
+open(outfile, 'w').close()
+
 # %% [markdown]
 # Prereq stuff
 
 # %%
 def calc_prereqs(taken, check_course):
-    data=pd.read_csv('../../database/CSClass_info.csv')
+    data=pd.read_csv(databasefile)
     row = data['Course Number']
     # print(row)
     tempPrereq = data.loc[data['Course Number']==check_course]['Prereq Info']     #from database
@@ -38,12 +56,12 @@ def calc_prereqs(taken, check_course):
 
     # print('prereq', prereq)
     # print('stud_prev', stud_prev)
-    
+
     ret = []
 
     for i in range (len(prereq)):
         temp = prereq[i]
-        
+
         if len(temp) == 10:
             contains = False
             for j in range (len(stud_prev)):
@@ -89,16 +107,18 @@ def calc_prereqs(taken, check_course):
     return ret
 
 # %%
-database = pd.read_csv('../../database/CSClass_info.csv')
-print(database)
+database = pd.read_csv(databasefile)
+# print(database)
 def retrieve(course, identifier):
     i = database[(database['Course Number']==course)]
+    if len(i) == 0:
+        return None
     i = i[identifier].item()
     return i
 
 # %%
 # print(database)
-print(retrieve('01:198:419', 'Credits'))
+# print(retrieve('01:198:419', 'Credits'))
 
 # %%
 # Helper methods
@@ -107,18 +127,44 @@ class State:
     running = True
     inputhistory = []
     outputhistory = []
+    qhistory = []
     courselist = None
     def __init__ (self, q):
-      self.currQ = q
+        self.setQuery(q)
+    def setQuery(self, q):
+        self.currQ = q
+        self.qhistory.append(q)
+
+    #In progress
+    def descend(self, q):
+        return
+    def ascend(self, q):
+        return
+
+def redirect_to_file(text):
+    original = sys.stdout
+    x = open(outfile, 'a')
+    sys.stdout = x
+    if original == sys.stdout:
+        original = trueoriginal
+        # print('this is your redirected text:')
+    print(text)
+    sys.stdout = original
+    x.close()
+    # with open(outfile, 'a') as f:
+    #     with redirect_stdout(f):
+    #         print(text)
+
 
 def fakeprint(state, *args):
     a = list(map(str, args))
     s = ' '.join(a)
-    print(s)
+    redirect_to_file(s)
     state.outputhistory.append(s)
+    # print(s)
     return s
 
-    
+
 def farewellmethod(state):
     fakeprint(state, 'goodbye then!')
     state.running = False
@@ -136,11 +182,11 @@ def cantake(state):
     print("test")
     if not state.courselist:
       fakeprint(state, "I don't know what courses you have, I'm afraid. What are they?")
-      return
-    # #   courseaccess(state)
-    
+      state.setQuery(queries['courses'])
+      courseaccess(state)
+      state.setQuery(queries['cantake'])
     fakeprint(state, 'your current courses are', state.courselist)
-    prereqs = calc_prereqs(state.courselist, state.inputhistory[-1].split(' ')[-1].replace('?','').replace('.',''))
+    prereqs = calc_prereqs(state.courselist, coursematcher.findall(state.inputhistory[-1])[-1])
     # fakeprint(state, "So, I have no idea whether you can take this one!")
     fakeprint(state, 'You can take this course!' if len(prereqs) == 0 else 'You still need '+str(prereqs))
     return
@@ -340,7 +386,19 @@ class Query:
 
 
 # %%
-queries = {'greeting': Query('greeting',
+queries = {'root': Query('root',
+                         ['home',
+                          'cancel',
+                          'cancel query',
+                          'clear',
+                          'I have another question',
+                          'I want to know something else',
+                          'Ok, thanks!',
+                          'Thanks',
+                          'thanks'
+                          'next question'],
+                         lambda state: fakeprint(state, 'What would you like to know?')),
+          'greeting': Query('greeting',
                              ["hello, how are you?",
                               "greetings!",
                               "salutations!",
@@ -349,7 +407,9 @@ queries = {'greeting': Query('greeting',
                               "hello.",
                               "hi.",
                               "hi!"],
-                             lambda state: fakeprint(state, "hello to you too!")),
+                             lambda state: (fakeprint(state, "hello to you too!"),
+                                            # None if 'greeting' not in childrenmap['root'] else childrenmap['root'].remove('greeting'),
+                                            state.setQuery(queries['root'] if len(state.qhistory)<=1 else state.qhistory[-2]))),
            'farewell': Query('farewell',
                              ["goodbye.",
                               "goodbye!",
@@ -394,31 +454,64 @@ queries = {'greeting': Query('greeting',
                                 'What course can I swap for Discrete?'],
                                lambda state: fakeprint(state, "I have no idea, I'm not a person! Advisors are, though!")),
            'cantake': Query('cantake',
-                            ['Can I take 01:198:205',
-                             'Can I take 01:198:206',
-                             'Can I register for 01:198:206',
+                            ['Can I take 01:198:205?',
+                             'Can I take 01:198:206?',
+                             'Can I register for 01:198:206?',
                              'Is it possible to take 01:198:205?'],
                             lambda state: cantake(state)),
            'info': Query('info',
-                         ['Tell me about 01:198:105'],
-                         lambda state: fakeprint(state, state.inputhistory[-1][14:], 
-                                       'name: ' + str(retrieve(state.inputhistory[-1].split(' ')[-1], 'Name')),
-                                       'credits: ' + str(retrieve(state.inputhistory[-1].split(' ')[-1], 'Credits')), 
-                                       'professor:'+ str(retrieve(state.inputhistory[-1].split(' ')[-1], 'Professor')))),
+                         ['Tell me about 01:198:105',
+                          'Can you tell me about 01:198:101?',
+                          'Can you tell me about 01:198:101',
+                          'And about 01:198:203?'],
+                         lambda state: (fakeprint(state, *(coursematcher.findall(state.inputhistory[-1])[-1],
+                                                           '\n name: ' + str(retrieve(coursematcher.findall(state.inputhistory[-1])[-1], 'Name')),
+                                                           '\n credits: ' + str(retrieve(coursematcher.findall(state.inputhistory[-1])[-1], 'Credits')),
+                                                           '\n professor: ' + str(retrieve(coursematcher.findall(state.inputhistory[-1])[-1], 'Professor'))
+                                                          # 'name: ' + str(retrieve(state.inputhistory[-1].split(' ')[-1], 'Name')),
+                                                          # 'credits: ' + str(retrieve(state.inputhistory[-1].split(' ')[-1], 'Credits')),
+                                                          # 'professor:'+ str(retrieve(state.inputhistory[-1].split(' ')[-1], 'Professor'))
+                                                          ))
+                         if len(coursematcher.findall(state.inputhistory[-1])) > 0
+                         and [retrieve(coursematcher.findall(state.inputhistory[-1])[-1], x) for x in ['Name', 'Credits', 'Professor']] != [None, None, None]
+                         else
+                         fakeprint(state, "I'm afraid " + ("this course" if not coursematcher.search(state.inputhistory[-1]) else coursematcher.findall(state.inputhistory[-1])[-1]) + " doesn't exist"),
+                         None
+                          # if len(state.qhistory)<=1 else state.setQuery(state.qhistory[-2])
+                         )),
            'courses': Query('courses',
                             ['Here are my courses',
                              "I'll tell you what courses I've taken",
                              "I've previously taken these courses"],
-                            lambda state: courseaccess(state))
+                            lambda state: courseaccess(state)),
+           'lastq': Query('lastq',
+                          ['And 01:198:111?',
+                           'And 01:198:314?',
+                           'And 01:198:206?',
+                           'And 01:198:205?',
+                           'Can you do that for 01:198:302?',
+                           'Can you do that for 01:198:112?',
+                           'Can you do that for 01:198:305?',
+                           'Can you do that for 01:198:205?',
+                           '01:198:512, then?',
+                           '01:198:111, then?',
+                           '01:198:211, then?',
+                           '01:198:109, then?'],
+                          lambda state: (fakeprint("There's nothing for me to repeat...")
+                          if len(list(filter(lambda x: x.name != 'root', state.qhistory)))<=1
+                          else state.setQuery(list(filter(lambda x : x.name != 'root', reversed(state.qhistory)))[0 if state.currQ.name=='root' else 1]),
+                                        #  print('lastq on ' + state.inputhistory[-1] + 'with query ' + state.currQ.name),
+                                         state.currQ.responses()['response'](state) if len(state.qhistory)<=1 else None))
            }
 
 
-childrenmap = {'greeting': ['greeting', 'farewell', 'shouldtake', 'shoulddrop', 'cantake', 'whatclass', 'info', 'courses'],
-               'shoulddrop': ['farewell', 'shouldtake', 'shoulddrop', 'cantake', 'whatclass'],
-               'shouldtake': ['farewell', 'shouldtake', 'shoulddrop', 'cantake', 'whatclass'],
-               'cantake': ['farewell', 'shouldtake', 'cantake', 'whatclass'],
+childrenmap = {'root': ['root', 'greeting', 'greeting', 'farewell', 'shouldtake', 'shoulddrop', 'cantake', 'whatclass', 'info', 'courses', 'lastq'],
+               'greeting': ['root', 'farewell', 'shouldtake', 'shoulddrop', 'cantake', 'whatclass', 'info', 'courses'],
+               'shoulddrop': ['farewell', 'shouldtake', 'shoulddrop', 'cantake', 'whatclass', 'lastq'],
+               'shouldtake': ['farewell', 'shouldtake', 'shoulddrop', 'cantake', 'whatclass', 'lastq'],
+               'cantake': ['farewell', 'shouldtake', 'cantake', 'whatclass', 'lastq'],
                'whatclass': ['farewell', 'shouldtake'],
-               'info': ['info', 'greeting', 'farewell'],
+               'info': ['info', 'lastq', 'root', 'farewell', 'lastq'],
                'courses': ['greeting', 'farewell']}
 
 for k in childrenmap:
@@ -462,18 +555,20 @@ def chatbot(state):
     # except:
     #     print("probabilities not available")
 
-    state.currQ = queries.get(le.inverse_transform(cl.predict([statement.vector]))[0], 'farewell')
+    state.setQuery(queries.get(le.inverse_transform(cl.predict([statement.vector]))[0], 'farewell'))
     outputstring = state.currQ.responses()['response'](state)
     # outputhistory.append(outputstring)
 
 tempvar = None # current input
 
 def run():
-    s = State(queries['greeting'])
+    s = State(queries['root'])
     s.running = True
     # leaverlist = queries['farewell'].examples
     # leaverlist = leaverlist + [nlp(x) for x in ["quit.", "quit", "exit", "leave", "goodbye"]]
     while s.running:
+        print(s.currQ.name)
+        print(s.currQ.children.keys())
         s.inputhistory.append(input("say something!   "))
         # inputhistory.append(tempvar)
         print()
@@ -486,6 +581,7 @@ def run():
     return s
 
 # %%
+
 # currstate = run()
 # print(currstate.inputhistory)
 # print(currstate.outputhistory)
@@ -589,7 +685,7 @@ def run():
 #             # if subject is the target, swap verb forms
 #             if j >= 0 and tagged_words[j][0].lower() == target_subject_pronoun :
 #                 tagged_words[i] = replacement
-#             # didn't find a subject before the verb, so probably a question 
+#             # didn't find a subject before the verb, so probably a question
 #             if j < 0 :
 #                 j = i + 1
 #                 while j < len(tagged_words) and tagged_words[j][1] not in subject_tags :
@@ -597,7 +693,7 @@ def run():
 #                 # if subject is the target, swap verb forms
 #                 if j < len(tagged_words) and tagged_words[j][0].lower() == target_subject_pronoun :
 #                     tagged_words[i] = replacement
-                    
+
 # def handle_specials(tagged_words) :
 #     # don't keep punctuation at the end
 #     while tagged_words[-1][1] == 'PUNCT' :
@@ -608,7 +704,7 @@ def run():
 #     swap_ambiguous_verb(tagged_words, ("were", "BED"), "i", ("was", "BEDZ"))
 #     swap_ambiguous_verb(tagged_words, ("was", "BEDZ"), "you", ("were", "BED"))
 
-    
+
 # close_punc = ['.', ',', "''"]
 # def translate(this):
 #     '''tokens = tokenize(this)
@@ -622,7 +718,7 @@ def run():
 #         for i in range(1, len(translation)) :
 #             if translation[i-1][1] != '``' and translation[i][1] not in close_punc :
 #                 with_spaces.append(' ')
-#             with_spaces.append(translation[i][0])           
+#             with_spaces.append(translation[i][0])
 #     return ''.join(with_spaces)
 
 # # %%
@@ -644,7 +740,7 @@ def run():
 #     ["Hello(.*)",
 #          [  "Hello... I'm glad you could drop by today.",
 #             "Hi there... how are you today?"]],
-#     ["I'm great", 
+#     ["I'm great",
 #          ["Great! Did you want to ask me anything?",
 #             "Wonderful! Feel free to ask me any questions that you may have!"]],
 #     ["Can you answer (.*)",
@@ -689,14 +785,13 @@ def run():
 # # %%
 # # define basic node class for course suggestion tree
 # class Node(object):
-    
 #     def __init__(self, val):
 #         self.val = val
 #         self.children = []
-        
+
 #     def add_child(self, obj):
 #         self.children.append(obj)
-        
+
 # q1 = Node("suggesting courses, overview of CS or narrowed focus?")
 # q2 = Node("You picked overview of CS! academic discipline or applications?")
 # q3 = Node("You picked narrowed focus! software engineering or data science?")
@@ -726,15 +821,15 @@ def run():
 # def possible(state):
 #     # checking for eliza rules or task state
 #     plans = []
-    
+
 #     # check if 0 utterances have been said
 #     if(len(state[utterances]) == 0):
 #         plans.append("Type to chat!")
-#     else: 
+#     else:
 #         # gets eliza response
 #         plans.append(respond(state[utterances][most_recent]))
 
-    
+
 #         # check if no tasks have been initialized
 #         # q1Rules = ["suggest", "class", "course", "recommend"]
 #         q1Rules = ["recommend"]
@@ -751,7 +846,8 @@ def run():
 #                     # update_state(child, state)
 #                     plans.append(child)
 #                     break
-                    
+
+
 #         # information retrieval "tell me information about X"
 #         # infoRetrievalRules = ["information", "tell me", "describe"]
 #         infoRetrievalRules = ["information"]
@@ -773,8 +869,8 @@ def run():
 #                         identifier = i
 #                         break
 #                 plans.append(retrieve(course, identifier))
-        
-    
+
+
 #     return plans
 
 # # %% [markdown]
@@ -785,7 +881,7 @@ def run():
 #     # default plans
 #     plans = ["quit", "Mistake"]
 #     # respond to suggestion
-#     if len(state[tasks]) > 0 and len(state[tasks][most_recent].children) != 0: 
+#     if len(state[tasks]) > 0 and len(state[tasks][most_recent].children) != 0:
 #         tokens = re.split(", |! | or ", state[tasks][most_recent].val)
 #         plans = plans + tokens[-2:]
 #     # ask for suggestion
@@ -793,20 +889,20 @@ def run():
 #         # q1Rules = ["suggest", "class", "course", "recommend"]
 #         q1Rules = ["recommend"]
 #         plans.append(random.choice(q1Rules))
-    
+
 #     #infoRetrievalRules = ["information", "tell me", "describe"]
 #     infoRetrievalRules = ["information"]
 #     #courses = []
 #     #courses.append(df["id"])
-    
+
 #     # ask about class
 #     courses = list(df["id"]) + list(df["name"])
 #     #print(courses)
 #     utterance = random.choice(infoRetrievalRules) + " " + random.choice(df.columns) + " " + random.choice(courses)
 #     plans.append(utterance)
-    
+
 #     return plans
-    
+
 
 # # %% [markdown]
 # # Update States
@@ -826,7 +922,7 @@ def run():
 # def update_state(task, state):
 #     #     state.get("task").append(task)
 #     #     return state
-    
+
 #     u, a, t = list(state)
 #     t = list(t)
 #     t.append(task)
@@ -843,7 +939,7 @@ def run():
 # #     n = state.copy()
 # #     n['a'] = n['a'].copy()
 # #     n['a'].append(item)
-    
+
 #     u, a, t = list(state)
 #     a = list(a)
 #     a.append(item)
@@ -962,7 +1058,7 @@ def run():
 #         for node in leafNodes:
 #             if str(action) in node.val:
 #                 reward += 5
-            
+
 #     return reward
 
 # # %%
@@ -986,16 +1082,16 @@ def run():
 # def q_action(state, actions, epsilon):
 #     if random.random() < epsilon:
 #         max_q = None
-#         for action in action:
+#         for action in actions:
 #             #check to see if state action pair is in q_values dictionary, if not insert it
 #             if (state, action) not in q_values:
 #                 q_values.setdefault((state, action), 0)
 
 #             if q_values.get(state,action) > q_values.get(max_q):
 #                 max_q = (state,action)
-                    
+
 #         return max_q[1]
-                
+
 #     else:
 #         return random.choice(actions)
 
@@ -1019,23 +1115,23 @@ def run():
 #     # state0 = {"u": [], "a": [], "task": []}
 #     state0 = ((), (), ())
 #     utterance = None
-    
+
 #     while(True):
 #         # determine chatbot action
 #         plans = possible(state0)
 #         action = deliberate(plans, state0)
 #         userTurnState = do(action, state0)
-        
+
 #         # determine user utterance
 #         utterance = random.choice(userUtterance(userTurnState))
 #         # print(utterance)
 #         nextState = understand(utterance, userTurnState)
-        
+
 #         # handle rewards (reward for action that transitions to nextState)
 #         reward = getReward(state0, action, nextState)
 #         old_q_value = q_values.get((state0, action), default)
-        
-        
+
+
 #         # if newState is not in dictionary, add it
 #         found = False
 #         for k in q_values:
@@ -1044,8 +1140,8 @@ def run():
 #                 break
 #         if not found:
 #             q_values[(nextState, None)] = default
-        
-        
+
+
 #         # get q_values associated with next state
 #         vals = []
 #         for key, val in q_values.items():
@@ -1054,12 +1150,12 @@ def run():
 #         if(len(vals) == 0): vals.append(default)
 #         td = reward + (discount_factor * max(vals) - old_q_value)
 #         newqq = old_q_value + learning_rate * (td)
-                      
+
 #         q_values.update({(state0, action):newqq})
-                      
+
 #         if utterance == "quit":
 #             break
-            
+
 #         state0 = nextState
 #         # print(state0)
 
