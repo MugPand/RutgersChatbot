@@ -1,0 +1,7 @@
+What would you like to know?
+I don't know what courses you have, I'm afraid. What are they?
+Ok, thanks! I'll remember those courses
+your current courses are ['01:198:111']
+You still need ['01:640:152']
+your current courses are ['01:198:111']
+You still need ['01:198:112']

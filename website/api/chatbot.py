@@ -182,9 +182,10 @@ def cantake(state):
     print("test")
     if not state.courselist:
       fakeprint(state, "I don't know what courses you have, I'm afraid. What are they?")
-      state.setQuery(queries['courses'])
-      courseaccess(state)
-      state.setQuery(queries['cantake'])
+      return
+    #   state.setQuery(queries['courses'])
+    #   courseaccess(state)
+    #   state.setQuery(queries['cantake'])
     fakeprint(state, 'your current courses are', state.courselist)
     prereqs = calc_prereqs(state.courselist, coursematcher.findall(state.inputhistory[-1])[-1])
     # fakeprint(state, "So, I have no idea whether you can take this one!")

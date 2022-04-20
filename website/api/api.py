@@ -27,6 +27,7 @@ def user():
             courseRoutine = False
             cb.fakeprint(s, "Ok, thanks! I'll remember those courses")
             output += "Ok, thanks! I'll remember those courses\n"
+            s.setQuery(cb.queries['cantake'])
             cb.fakeprint(s, 'your current courses are', s.courselist)
             output += ('your current courses are: ' + str(s.courselist) + '\n')
             prereqs = cb.calc_prereqs(s.courselist, storeCourse)
@@ -40,9 +41,10 @@ def user():
             return str(temp)
         elif(s.outputhistory[-1] == 'I don\'t know what courses you have, I\'m afraid. What are they?'):
             courseRoutine = True
-            storeCourse = s.inputhistory[-1].split(' ')[-1].replace('?','').replace('.','')
+            storeCourse = cb.coursematcher.findall(s.inputhistory[-1])[-1]
             s.courselist = s.courselist if s.courselist else []
             courseList = s.courselist
+            s.setQuery(cb.queries['courses'])
             return str(s.outputhistory[-1])
 
         output = str(s.outputhistory[-1])
