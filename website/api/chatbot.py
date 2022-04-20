@@ -161,6 +161,7 @@ def fakeprint(state, *args):
     s = ' '.join(a)
     redirect_to_file(s)
     state.outputhistory.append(s)
+    # print(s)
     return s
 
 
@@ -185,7 +186,7 @@ def cantake(state):
       state.setQuery(queries['cantake'])
 
     fakeprint(state, 'your current courses are', state.courselist)
-    prereqs = calc_prereqs(state.courselist, state.inputhistory[-1].split(' ')[-1].replace('?','').replace('.',''))
+    prereqs = calc_prereqs(state.courselist, coursematcher.findall(state.inputhistory[-1])[-1])
     # fakeprint(state, "So, I have no idea whether you can take this one!")
     fakeprint(state, 'You can take this course!' if len(prereqs) == 0 else 'You still need '+str(prereqs))
 
@@ -385,7 +386,19 @@ class Query:
 
 
 # %%
-queries = {'greeting': Query('greeting',
+queries = {'root': Query('root',
+                         ['home',
+                          'cancel',
+                          'cancel query',
+                          'clear',
+                          'I have another question',
+                          'I want to know something else',
+                          'Ok, thanks!',
+                          'Thanks',
+                          'thanks'
+                          'next question'],
+                         lambda state: fakeprint(state, 'What would you like to know?')),
+          'greeting': Query('greeting',
                              ["hello, how are you?",
                               "greetings!",
                               "salutations!",
@@ -394,7 +407,9 @@ queries = {'greeting': Query('greeting',
                               "hello.",
                               "hi.",
                               "hi!"],
-                             lambda state: fakeprint(state, "hello to you too!")),
+                             lambda state: (fakeprint(state, "hello to you too!"),
+                                            # None if 'greeting' not in childrenmap['root'] else childrenmap['root'].remove('greeting'),
+                                            state.setQuery(queries['root'] if len(state.qhistory)<=1 else state.qhistory[-2]))),
            'farewell': Query('farewell',
                              ["goodbye.",
                               "goodbye!",
@@ -447,7 +462,8 @@ queries = {'greeting': Query('greeting',
            'info': Query('info',
                          ['Tell me about 01:198:105',
                           'Can you tell me about 01:198:101?',
-                          'Can you tell me about 01:198:101'],
+                          'Can you tell me about 01:198:101',
+                          'And about 01:198:203?'],
                          lambda state: (fakeprint(state, *(coursematcher.findall(state.inputhistory[-1])[-1],
                                                            '\n name: ' + str(retrieve(coursematcher.findall(state.inputhistory[-1])[-1], 'Name')),
                                                            '\n credits: ' + str(retrieve(coursematcher.findall(state.inputhistory[-1])[-1], 'Credits')),
@@ -456,24 +472,46 @@ queries = {'greeting': Query('greeting',
                                                           # 'credits: ' + str(retrieve(state.inputhistory[-1].split(' ')[-1], 'Credits')),
                                                           # 'professor:'+ str(retrieve(state.inputhistory[-1].split(' ')[-1], 'Professor'))
                                                           ))
-                         if coursematcher.search(state.inputhistory[-1])
-                         and [retrieve(state.inputhistory[-1].split(' ')[-1], x) for x in ['Name', 'Credits', 'Professor']] != [None, None, None] else
-                         fakeprint(state, "I'm afraid this course doesn't exist"),
-                         None if len(state.qhistory)<=1 else state.setQuery(state.qhistory[-2]))),
+                         if len(coursematcher.findall(state.inputhistory[-1])) > 0
+                         and [retrieve(coursematcher.findall(state.inputhistory[-1])[-1], x) for x in ['Name', 'Credits', 'Professor']] != [None, None, None]
+                         else
+                         fakeprint(state, "I'm afraid " + ("this course" if not coursematcher.search(state.inputhistory[-1]) else coursematcher.findall(state.inputhistory[-1])[-1]) + " doesn't exist"),
+                         None
+                          # if len(state.qhistory)<=1 else state.setQuery(state.qhistory[-2])
+                         )),
            'courses': Query('courses',
                             ['Here are my courses',
                              "I'll tell you what courses I've taken",
                              "I've previously taken these courses"],
-                            lambda state: courseaccess(state))
+                            lambda state: courseaccess(state)),
+           'lastq': Query('lastq',
+                          ['And 01:198:111?',
+                           'And 01:198:314?',
+                           'And 01:198:206?',
+                           'And 01:198:205?',
+                           'Can you do that for 01:198:302?',
+                           'Can you do that for 01:198:112?',
+                           'Can you do that for 01:198:305?',
+                           'Can you do that for 01:198:205?',
+                           '01:198:512, then?',
+                           '01:198:111, then?',
+                           '01:198:211, then?',
+                           '01:198:109, then?'],
+                          lambda state: (fakeprint("There's nothing for me to repeat...")
+                          if len(list(filter(lambda x: x.name != 'root', state.qhistory)))<=1
+                          else state.setQuery(list(filter(lambda x : x.name != 'root', reversed(state.qhistory)))[0 if state.currQ.name=='root' else 1]),
+                                        #  print('lastq on ' + state.inputhistory[-1] + 'with query ' + state.currQ.name),
+                                         state.currQ.responses()['response'](state) if len(state.qhistory)<=1 else None))
            }
 
 
-childrenmap = {'greeting': ['greeting', 'farewell', 'shouldtake', 'shoulddrop', 'cantake', 'whatclass', 'info', 'courses'],
-               'shoulddrop': ['farewell', 'shouldtake', 'shoulddrop', 'cantake', 'whatclass'],
-               'shouldtake': ['farewell', 'shouldtake', 'shoulddrop', 'cantake', 'whatclass'],
-               'cantake': ['farewell', 'shouldtake', 'cantake', 'whatclass'],
+childrenmap = {'root': ['root', 'greeting', 'greeting', 'farewell', 'shouldtake', 'shoulddrop', 'cantake', 'whatclass', 'info', 'courses', 'lastq'],
+               'greeting': ['root', 'farewell', 'shouldtake', 'shoulddrop', 'cantake', 'whatclass', 'info', 'courses'],
+               'shoulddrop': ['farewell', 'shouldtake', 'shoulddrop', 'cantake', 'whatclass', 'lastq'],
+               'shouldtake': ['farewell', 'shouldtake', 'shoulddrop', 'cantake', 'whatclass', 'lastq'],
+               'cantake': ['farewell', 'shouldtake', 'cantake', 'whatclass', 'lastq'],
                'whatclass': ['farewell', 'shouldtake'],
-               'info': ['info', 'greeting', 'farewell'],
+               'info': ['info', 'lastq', 'root', 'farewell', 'lastq'],
                'courses': ['greeting', 'farewell']}
 
 for k in childrenmap:
@@ -524,11 +562,13 @@ def chatbot(state):
 tempvar = None # current input
 
 def run():
-    s = State(queries['greeting'])
+    s = State(queries['root'])
     s.running = True
     # leaverlist = queries['farewell'].examples
     # leaverlist = leaverlist + [nlp(x) for x in ["quit.", "quit", "exit", "leave", "goodbye"]]
     while s.running:
+        print(s.currQ.name)
+        print(s.currQ.children.keys())
         s.inputhistory.append(input("say something!   "))
         # inputhistory.append(tempvar)
         print()
