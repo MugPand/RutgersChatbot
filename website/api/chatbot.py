@@ -484,584 +484,584 @@ def run():
     return s
 
 # %%
-currstate = run()
-print(currstate.inputhistory)
-print(currstate.outputhistory)
-print(currstate.courselist)
+# currstate = run()
+# print(currstate.inputhistory)
+# print(currstate.outputhistory)
+# print(currstate.courselist)
 
-# %%
-tempvar = "Tell me about Data Structures"
-temp = "Data Structures"
-# retrieve(temp, 'credits')
-# (lambda : print(retrieve(tempvar[14:], 'credits')))()
-x = queries['info'].responses()['response']()
+# # %%
+# tempvar = "Tell me about Data Structures"
+# temp = "Data Structures"
+# # retrieve(temp, 'credits')
+# # (lambda : print(retrieve(tempvar[14:], 'credits')))()
+# x = queries['info'].responses()['response']()
 
-# %%
-df = pd.read_csv('smallData.csv')
-df.head(5)
+# # %%
+# df = pd.read_csv('smallData.csv')
+# df.head(5)
 
-# %% [markdown]
-# Define retrieve function for accessing information in database
+# # %% [markdown]
+# # Define retrieve function for accessing information in database
 
-# %%
-def retrieve(course, identifier):
-    i = df[(df['id']==course) | (df['name']==course)]
-    i = i[identifier].item()
-    return i
+# # %%
+# def retrieve(course, identifier):
+#     i = df[(df['id']==course) | (df['name']==course)]
+#     i = i[identifier].item()
+#     return i
 
-# %%
-# retrieve("01:198:112", "credits")
+# # %%
+# # retrieve("01:198:112", "credits")
 
-# %% [markdown]
-# Load Spacy Model & Tokenize utterances
+# # %% [markdown]
+# # Load Spacy Model & Tokenize utterances
 
-# %%
-nlp = spacy.load("en_core_web_sm")
-def tokenize(utterance):
-    doc = nlp(utterance)
-    tagged_tokens = []
-    for token in doc:
-        tagged_tokens.append((token.text, token.pos_))
+# # %%
+# nlp = spacy.load("en_core_web_sm")
+# def tokenize(utterance):
+#     doc = nlp(utterance)
+#     tagged_tokens = []
+#     for token in doc:
+#         tagged_tokens.append((token.text, token.pos_))
 
-    return tagged_tokens
+#     return tagged_tokens
 
-# %%
-tokenize("I am very happy!")
+# # %%
+# tokenize("I am very happy!")
 
-# %% [markdown]
-# Handle Tagged & Untagged Reflections
+# # %% [markdown]
+# # Handle Tagged & Untagged Reflections
 
-# %%
-tagged_reflection_of = {
-    ("you", "PPSS") : "I",
-    ("you", "PPO") : "me"
-}
+# # %%
+# tagged_reflection_of = {
+#     ("you", "PPSS") : "I",
+#     ("you", "PPO") : "me"
+# }
 
-untagged_reflection_of = {
-    "am"    : "are",
-    "i"     : "you",
-    "i'd"   : "you would",
-    "i've"  : "you have",
-    "i'll"  : "you will",
-    "i'm"   : "you are",
-    "my"    : "your",
-    "me"    : "you",
-    "you've": "I have",
-    "you'll": "I will",
-    "you're": "I am",
-    "your"  : "my",
-    "yours" : "mine"
-}
+# untagged_reflection_of = {
+#     "am"    : "are",
+#     "i"     : "you",
+#     "i'd"   : "you would",
+#     "i've"  : "you have",
+#     "i'll"  : "you will",
+#     "i'm"   : "you are",
+#     "my"    : "your",
+#     "me"    : "you",
+#     "you've": "I have",
+#     "you'll": "I will",
+#     "you're": "I am",
+#     "your"  : "my",
+#     "yours" : "mine"
+# }
 
-# %% [markdown]
-# Translate Tokens
+# # %% [markdown]
+# # Translate Tokens
 
-# %%
-def translate_token(wt) :
-    (word, tag) = wt
-    wl = word.lower()
-    if (wl, tag) in tagged_reflection_of :
-        return (tagged_reflection_of[wl, tag], tag)
-    if wl in untagged_reflection_of :
-        return (untagged_reflection_of[wl], tag)
-    if tag.find("NP") < 0 :
-        return (wl, tag)
-    return (word, tag)
+# # %%
+# def translate_token(wt) :
+#     (word, tag) = wt
+#     wl = word.lower()
+#     if (wl, tag) in tagged_reflection_of :
+#         return (tagged_reflection_of[wl, tag], tag)
+#     if wl in untagged_reflection_of :
+#         return (untagged_reflection_of[wl], tag)
+#     if tag.find("NP") < 0 :
+#         return (wl, tag)
+#     return (word, tag)
 
-subject_tags = ["PPS",  # he, she, it | pronouns singular
-                "PPSS", # you, we, they | pronouns plural
-                "PN",   # everyone, someone | indefinite pronoun
-                "NN",   # dog, cat | noun, common, singular or mass
-                "NNS",  # dogs, cats | noun, common, plural
-                "NP",   # Fred, Jane | proper noun
-                "NPS"   # Republicans, Democrats | proper plural
-                ]
+# subject_tags = ["PPS",  # he, she, it | pronouns singular
+#                 "PPSS", # you, we, they | pronouns plural
+#                 "PN",   # everyone, someone | indefinite pronoun
+#                 "NN",   # dog, cat | noun, common, singular or mass
+#                 "NNS",  # dogs, cats | noun, common, plural
+#                 "NP",   # Fred, Jane | proper noun
+#                 "NPS"   # Republicans, Democrats | proper plural
+#                 ]
 
-def swap_ambiguous_verb(tagged_words, tagged_verb_form, target_subject_pronoun, replacement) :
-    for i, (w, t) in enumerate(tagged_words) :
-        if (w, t) == tagged_verb_form :
-            j = i - 1
-            # look earlier for the subject
-            while j >= 0 and tagged_words[j][1] not in subject_tags :
-                j = j - 1
-            # if subject is the target, swap verb forms
-            if j >= 0 and tagged_words[j][0].lower() == target_subject_pronoun :
-                tagged_words[i] = replacement
-            # didn't find a subject before the verb, so probably a question 
-            if j < 0 :
-                j = i + 1
-                while j < len(tagged_words) and tagged_words[j][1] not in subject_tags :
-                    j = j + 1
-                # if subject is the target, swap verb forms
-                if j < len(tagged_words) and tagged_words[j][0].lower() == target_subject_pronoun :
-                    tagged_words[i] = replacement
+# def swap_ambiguous_verb(tagged_words, tagged_verb_form, target_subject_pronoun, replacement) :
+#     for i, (w, t) in enumerate(tagged_words) :
+#         if (w, t) == tagged_verb_form :
+#             j = i - 1
+#             # look earlier for the subject
+#             while j >= 0 and tagged_words[j][1] not in subject_tags :
+#                 j = j - 1
+#             # if subject is the target, swap verb forms
+#             if j >= 0 and tagged_words[j][0].lower() == target_subject_pronoun :
+#                 tagged_words[i] = replacement
+#             # didn't find a subject before the verb, so probably a question 
+#             if j < 0 :
+#                 j = i + 1
+#                 while j < len(tagged_words) and tagged_words[j][1] not in subject_tags :
+#                     j = j + 1
+#                 # if subject is the target, swap verb forms
+#                 if j < len(tagged_words) and tagged_words[j][0].lower() == target_subject_pronoun :
+#                     tagged_words[i] = replacement
                     
-def handle_specials(tagged_words) :
-    # don't keep punctuation at the end
-    while tagged_words[-1][1] == 'PUNCT' :
-        tagged_words.pop()
-    # replace verb "be" to agree with swapped subjects
-    swap_ambiguous_verb(tagged_words, ("are", "BER"), "i", ("am", "BEM"))
-    swap_ambiguous_verb(tagged_words, ("am", "BEM"), "you", ("are", "BER"))
-    swap_ambiguous_verb(tagged_words, ("were", "BED"), "i", ("was", "BEDZ"))
-    swap_ambiguous_verb(tagged_words, ("was", "BEDZ"), "you", ("were", "BED"))
+# def handle_specials(tagged_words) :
+#     # don't keep punctuation at the end
+#     while tagged_words[-1][1] == 'PUNCT' :
+#         tagged_words.pop()
+#     # replace verb "be" to agree with swapped subjects
+#     swap_ambiguous_verb(tagged_words, ("are", "BER"), "i", ("am", "BEM"))
+#     swap_ambiguous_verb(tagged_words, ("am", "BEM"), "you", ("are", "BER"))
+#     swap_ambiguous_verb(tagged_words, ("were", "BED"), "i", ("was", "BEDZ"))
+#     swap_ambiguous_verb(tagged_words, ("was", "BEDZ"), "you", ("were", "BED"))
 
     
-close_punc = ['.', ',', "''"]
-def translate(this):
-    '''tokens = tokenize(this)
-    tagged_tokens = tagger.tag(tokens)'''
-    tagged_tokens = tokenize(this)
-    print(tagged_tokens)
-    translation = [translate_token(tt) for tt in tagged_tokens]
-    handle_specials(translation)
-    if len(translation) > 0 :
-        with_spaces = [translation[0][0]]
-        for i in range(1, len(translation)) :
-            if translation[i-1][1] != '``' and translation[i][1] not in close_punc :
-                with_spaces.append(' ')
-            with_spaces.append(translation[i][0])           
-    return ''.join(with_spaces)
+# close_punc = ['.', ',', "''"]
+# def translate(this):
+#     '''tokens = tokenize(this)
+#     tagged_tokens = tagger.tag(tokens)'''
+#     tagged_tokens = tokenize(this)
+#     print(tagged_tokens)
+#     translation = [translate_token(tt) for tt in tagged_tokens]
+#     handle_specials(translation)
+#     if len(translation) > 0 :
+#         with_spaces = [translation[0][0]]
+#         for i in range(1, len(translation)) :
+#             if translation[i-1][1] != '``' and translation[i][1] not in close_punc :
+#                 with_spaces.append(' ')
+#             with_spaces.append(translation[i][0])           
+#     return ''.join(with_spaces)
 
-# %%
-translate("I am very happy!")
+# # %%
+# translate("I am very happy!")
 
-# %% [markdown]
-# Eliza based responses
+# # %% [markdown]
+# # Eliza based responses
 
-# %%
-rules = [(re.compile(x[0]), x[1]) for x in [
-    ['How are you?',
-         [ "I'm fine, thank you."]],
-    ['Thank you!',
-         ['No problem, did you have more questions?']],
-    ["I had a question about (.*)",
-         [  "Ask away!",
-            "I am happy to help!",
-            "Ok, What is your question?"]],
-    ["Hello(.*)",
-         [  "Hello... I'm glad you could drop by today.",
-            "Hi there... how are you today?"]],
-    ["I'm great", 
-         ["Great! Did you want to ask me anything?",
-            "Wonderful! Feel free to ask me any questions that you may have!"]],
-    ["Can you answer (.*)",
-         [  "Yes, I can!",
-            "What is your question?"]],
-    ["quit",
-         [  "Thank you for talking with me.",
-            "Good-bye.",
-            "Have a good day!"]],
-    ["(.*)",
-         [  "Please tell me more.",
-        "Can you elaborate on that?", "I don't understand. Can you rephrase? "]]
-]]
+# # %%
+# rules = [(re.compile(x[0]), x[1]) for x in [
+#     ['How are you?',
+#          [ "I'm fine, thank you."]],
+#     ['Thank you!',
+#          ['No problem, did you have more questions?']],
+#     ["I had a question about (.*)",
+#          [  "Ask away!",
+#             "I am happy to help!",
+#             "Ok, What is your question?"]],
+#     ["Hello(.*)",
+#          [  "Hello... I'm glad you could drop by today.",
+#             "Hi there... how are you today?"]],
+#     ["I'm great", 
+#          ["Great! Did you want to ask me anything?",
+#             "Wonderful! Feel free to ask me any questions that you may have!"]],
+#     ["Can you answer (.*)",
+#          [  "Yes, I can!",
+#             "What is your question?"]],
+#     ["quit",
+#          [  "Thank you for talking with me.",
+#             "Good-bye.",
+#             "Have a good day!"]],
+#     ["(.*)",
+#          [  "Please tell me more.",
+#         "Can you elaborate on that?", "I don't understand. Can you rephrase? "]]
+# ]]
 
-def respond(sentence):
-    # find a match among keys, last one is quaranteed to match.
-    for rule, value in rules:
-        match = rule.search(sentence)
-        if match is not None:
-            # found a match ... stuff with corresponding value
-            # chosen randomly from among the available options
-            resp = random.choice(value)
-            # we've got a response... stuff in reflected text where indicated
-            while '%' in resp:
-                pos = resp.find('%')
-                num = int(resp[pos+1:pos+2])
-                resp = resp.replace(resp[pos:pos+2], translate(match.group(num)))
-            return resp
+# def respond(sentence):
+#     # find a match among keys, last one is quaranteed to match.
+#     for rule, value in rules:
+#         match = rule.search(sentence)
+#         if match is not None:
+#             # found a match ... stuff with corresponding value
+#             # chosen randomly from among the available options
+#             resp = random.choice(value)
+#             # we've got a response... stuff in reflected text where indicated
+#             while '%' in resp:
+#                 pos = resp.find('%')
+#                 num = int(resp[pos+1:pos+2])
+#                 resp = resp.replace(resp[pos:pos+2], translate(match.group(num)))
+#             return resp
 
-# %%
-respond("I had a question about computer science?")
+# # %%
+# respond("I had a question about computer science?")
 
-# %%
-respond("Hello, I wanted to ask about computer science.")
+# # %%
+# respond("Hello, I wanted to ask about computer science.")
 
-# %%
-respond("Thank you!")
+# # %%
+# respond("Thank you!")
 
-# %% [markdown]
-# Build course suggestion tree
+# # %% [markdown]
+# # Build course suggestion tree
 
-# %%
-# define basic node class for course suggestion tree
-class Node(object):
+# # %%
+# # define basic node class for course suggestion tree
+# class Node(object):
     
-    def __init__(self, val):
-        self.val = val
-        self.children = []
+#     def __init__(self, val):
+#         self.val = val
+#         self.children = []
         
-    def add_child(self, obj):
-        self.children.append(obj)
+#     def add_child(self, obj):
+#         self.children.append(obj)
         
-q1 = Node("suggesting courses, overview of CS or narrowed focus?")
-q2 = Node("You picked overview of CS! academic discipline or applications?")
-q3 = Node("You picked narrowed focus! software engineering or data science?")
-q4 = Node("You picked applications! math & physical sciences or digital creation?")
-q5 = Node("You picked software engineering! beginner or experienced?")
-c1 = Node("You picked academic discipline! 01:198:105	Great Insights in Computer Science")
-c2 = Node("You picked math & physical sciences! 01:198:107	Computing for Math and the Sciences")
-c3 = Node("You picked digital creation! 01:198:110	Principles of Computer Science")
-c4 = Node("You picked data science! 01:198:142	Data 101: Data Literacy")
-c5 = Node("You picked beginner! 01:198:111	Introduction to Computer Science")
-c6 = Node("You picked experienced! 01:198:112	Data Structures")
-q1.add_child(q2)
-q1.add_child(q3)
-q2.add_child(c1)
-q2.add_child(q4)
-q4.add_child(c2)
-q4.add_child(c3)
-q3.add_child(c4)
-q3.add_child(q5)
-q5.add_child(c5)
-q5.add_child(c6)
+# q1 = Node("suggesting courses, overview of CS or narrowed focus?")
+# q2 = Node("You picked overview of CS! academic discipline or applications?")
+# q3 = Node("You picked narrowed focus! software engineering or data science?")
+# q4 = Node("You picked applications! math & physical sciences or digital creation?")
+# q5 = Node("You picked software engineering! beginner or experienced?")
+# c1 = Node("You picked academic discipline! 01:198:105	Great Insights in Computer Science")
+# c2 = Node("You picked math & physical sciences! 01:198:107	Computing for Math and the Sciences")
+# c3 = Node("You picked digital creation! 01:198:110	Principles of Computer Science")
+# c4 = Node("You picked data science! 01:198:142	Data 101: Data Literacy")
+# c5 = Node("You picked beginner! 01:198:111	Introduction to Computer Science")
+# c6 = Node("You picked experienced! 01:198:112	Data Structures")
+# q1.add_child(q2)
+# q1.add_child(q3)
+# q2.add_child(c1)
+# q2.add_child(q4)
+# q4.add_child(c2)
+# q4.add_child(c3)
+# q3.add_child(c4)
+# q3.add_child(q5)
+# q5.add_child(c5)
+# q5.add_child(c6)
 
-# %% [markdown]
-# Find possible actions for robot
+# # %% [markdown]
+# # Find possible actions for robot
 
-# %%
-def possible(state):
-    # checking for eliza rules or task state
-    plans = []
+# # %%
+# def possible(state):
+#     # checking for eliza rules or task state
+#     plans = []
     
-    # check if 0 utterances have been said
-    if(len(state[utterances]) == 0):
-        plans.append("Type to chat!")
-    else: 
-        # gets eliza response
-        plans.append(respond(state[utterances][most_recent]))
+#     # check if 0 utterances have been said
+#     if(len(state[utterances]) == 0):
+#         plans.append("Type to chat!")
+#     else: 
+#         # gets eliza response
+#         plans.append(respond(state[utterances][most_recent]))
 
     
-        # check if no tasks have been initialized
-        # q1Rules = ["suggest", "class", "course", "recommend"]
-        q1Rules = ["recommend"]
-        if(len(state[tasks]) == 0):
-            for word in state[utterances][most_recent].split():
-                if word in q1Rules:
-                    # update_state(q1, state)
-                    plans.append(q1)
-                    break
-        # check if tasks have been initialized -> add the next appropriate task
-        elif(isinstance(state[tasks][most_recent], Node)):
-            for child in state[tasks][most_recent].children:
-                if state[tasks][most_recent] in child.val:
-                    # update_state(child, state)
-                    plans.append(child)
-                    break
+#         # check if no tasks have been initialized
+#         # q1Rules = ["suggest", "class", "course", "recommend"]
+#         q1Rules = ["recommend"]
+#         if(len(state[tasks]) == 0):
+#             for word in state[utterances][most_recent].split():
+#                 if word in q1Rules:
+#                     # update_state(q1, state)
+#                     plans.append(q1)
+#                     break
+#         # check if tasks have been initialized -> add the next appropriate task
+#         elif(isinstance(state[tasks][most_recent], Node)):
+#             for child in state[tasks][most_recent].children:
+#                 if state[tasks][most_recent] in child.val:
+#                     # update_state(child, state)
+#                     plans.append(child)
+#                     break
                     
-        # information retrieval "tell me information about X"
-        # infoRetrievalRules = ["information", "tell me", "describe"]
-        infoRetrievalRules = ["information"]
-        for rule in infoRetrievalRules:
-            if rule in state[utterances][most_recent].lower():
-                course = None
-                identifier = None
-                for id in df['id'].tolist():
-                    if id.lower() in state[utterances][most_recent].lower():
-                        course = id
-                        break
-                if course == None:
-                    for name in df['name'].tolist():
-                        if name.lower() in state[utterances][most_recent].lower():
-                            course = name
-                            break
-                for i in df.columns:
-                    if i.lower() in state[utterances][most_recent].lower():
-                        identifier = i
-                        break
-                plans.append(retrieve(course, identifier))
+#         # information retrieval "tell me information about X"
+#         # infoRetrievalRules = ["information", "tell me", "describe"]
+#         infoRetrievalRules = ["information"]
+#         for rule in infoRetrievalRules:
+#             if rule in state[utterances][most_recent].lower():
+#                 course = None
+#                 identifier = None
+#                 for id in df['id'].tolist():
+#                     if id.lower() in state[utterances][most_recent].lower():
+#                         course = id
+#                         break
+#                 if course == None:
+#                     for name in df['name'].tolist():
+#                         if name.lower() in state[utterances][most_recent].lower():
+#                             course = name
+#                             break
+#                 for i in df.columns:
+#                     if i.lower() in state[utterances][most_recent].lower():
+#                         identifier = i
+#                         break
+#                 plans.append(retrieve(course, identifier))
         
     
-    return plans
+#     return plans
 
-# %% [markdown]
-# Find possible actions for user
+# # %% [markdown]
+# # Find possible actions for user
 
-# %%
-def userUtterance(state):
-    # default plans
-    plans = ["quit", "Mistake"]
-    # respond to suggestion
-    if len(state[tasks]) > 0 and len(state[tasks][most_recent].children) != 0: 
-        tokens = re.split(", |! | or ", state[tasks][most_recent].val)
-        plans = plans + tokens[-2:]
-    # ask for suggestion
-    if len(state[tasks]) == 0:
-        # q1Rules = ["suggest", "class", "course", "recommend"]
-        q1Rules = ["recommend"]
-        plans.append(random.choice(q1Rules))
+# # %%
+# def userUtterance(state):
+#     # default plans
+#     plans = ["quit", "Mistake"]
+#     # respond to suggestion
+#     if len(state[tasks]) > 0 and len(state[tasks][most_recent].children) != 0: 
+#         tokens = re.split(", |! | or ", state[tasks][most_recent].val)
+#         plans = plans + tokens[-2:]
+#     # ask for suggestion
+#     if len(state[tasks]) == 0:
+#         # q1Rules = ["suggest", "class", "course", "recommend"]
+#         q1Rules = ["recommend"]
+#         plans.append(random.choice(q1Rules))
     
-    #infoRetrievalRules = ["information", "tell me", "describe"]
-    infoRetrievalRules = ["information"]
-    #courses = []
-    #courses.append(df["id"])
+#     #infoRetrievalRules = ["information", "tell me", "describe"]
+#     infoRetrievalRules = ["information"]
+#     #courses = []
+#     #courses.append(df["id"])
     
-    # ask about class
-    courses = list(df["id"]) + list(df["name"])
-    #print(courses)
-    utterance = random.choice(infoRetrievalRules) + " " + random.choice(df.columns) + " " + random.choice(courses)
-    plans.append(utterance)
+#     # ask about class
+#     courses = list(df["id"]) + list(df["name"])
+#     #print(courses)
+#     utterance = random.choice(infoRetrievalRules) + " " + random.choice(df.columns) + " " + random.choice(courses)
+#     plans.append(utterance)
     
-    return plans
+#     return plans
     
 
-# %% [markdown]
-# Update States
+# # %% [markdown]
+# # Update States
 
-# %%
-# initial_state = s0 = {"u": [], "a": [], "task": []}
-initial_state = s0 = ((),(),())
+# # %%
+# # initial_state = s0 = {"u": [], "a": [], "task": []}
+# initial_state = s0 = ((),(),())
 
-# %%
-# define constants
-utterances = 0
-actions = 1
-tasks = 2
-most_recent = -1
+# # %%
+# # define constants
+# utterances = 0
+# actions = 1
+# tasks = 2
+# most_recent = -1
 
-# %%
-def update_state(task, state):
-    #     state.get("task").append(task)
-    #     return state
+# # %%
+# def update_state(task, state):
+#     #     state.get("task").append(task)
+#     #     return state
     
-    u, a, t = list(state)
-    t = list(t)
-    t.append(task)
-    t = tuple(t)
-    newState = (u, a, t)
-    return newState
+#     u, a, t = list(state)
+#     t = list(t)
+#     t.append(task)
+#     t = tuple(t)
+#     newState = (u, a, t)
+#     return newState
 
 
-# s1 = update_state("hello", s0)
-# print(s1)
+# # s1 = update_state("hello", s0)
+# # print(s1)
 
-# %%
-def do(item, state):
-#     n = state.copy()
-#     n['a'] = n['a'].copy()
-#     n['a'].append(item)
+# # %%
+# def do(item, state):
+# #     n = state.copy()
+# #     n['a'] = n['a'].copy()
+# #     n['a'].append(item)
     
-    u, a, t = list(state)
-    a = list(a)
-    a.append(item)
-    a = tuple(a)
-    newState = (u, a, t)
-    return newState
+#     u, a, t = list(state)
+#     a = list(a)
+#     a.append(item)
+#     a = tuple(a)
+#     newState = (u, a, t)
+#     return newState
 
-# s1 = do("hello", s0)
-# print(s1)
+# # s1 = do("hello", s0)
+# # print(s1)
 
-# %%
-def understand(item, state):
-#     # cases where state needs to be updated
-#     n = state.copy()
-#     # check if string is not empty
+# # %%
+# def understand(item, state):
+# #     # cases where state needs to be updated
+# #     n = state.copy()
+# #     # check if string is not empty
+# #     if item:
+# #         n['u'] = n['u'].copy()
+# #         n['u'].append(item)
+
+#     u, a, t = list(state)
+#     u = list(u)
 #     if item:
-#         n['u'] = n['u'].copy()
-#         n['u'].append(item)
+#         u.append(item)
+#     u = tuple(u)
+#     newState = (u, a, t)
+#     return newState
 
-    u, a, t = list(state)
-    u = list(u)
-    if item:
-        u.append(item)
-    u = tuple(u)
-    newState = (u, a, t)
-    return newState
+# # s1 = understand("hello", s0)
+# # print(s1)
 
-# s1 = understand("hello", s0)
-# print(s1)
+# # %% [markdown]
+# # Decide random action
 
-# %% [markdown]
-# Decide random action
+# # %%
+# def deliberate(plans, state):
+#     choice = random.choice(plans)
+#     if isinstance(choice, Node):
+#         state = update_state(choice, state)
+#         return choice.val
+#     else:
+#         return choice
 
-# %%
-def deliberate(plans, state):
-    choice = random.choice(plans)
-    if isinstance(choice, Node):
-        state = update_state(choice, state)
-        return choice.val
-    else:
-        return choice
+# # %% [markdown]
+# # Converse with list of utterances
 
-# %% [markdown]
-# Converse with list of utterances
+# # %%
+# def converse(utterances):
+# #     s0 = {"u": [], "a": [], "task": []}
+#     s0 = ((), (), ()) # represents utterances, actions, tasks
+#     for utterance in utterances:
+#         if utterance == "quit":
+#             break
+#         s1 = understand(utterance, s0)
+#         plans = possible(s1)
+#         action = deliberate(plans, s1)
+#         s0 = do(action, s1)
+#         print(utterance)
+#         print(action)
 
-# %%
-def converse(utterances):
-#     s0 = {"u": [], "a": [], "task": []}
-    s0 = ((), (), ()) # represents utterances, actions, tasks
-    for utterance in utterances:
-        if utterance == "quit":
-            break
-        s1 = understand(utterance, s0)
-        plans = possible(s1)
-        action = deliberate(plans, s1)
-        s0 = do(action, s1)
-        print(utterance)
-        print(action)
+# # %%
+# converse(["Hello", "I had a question about computer science", "can you suggest a course that I would like?", "overview", "academic", "quit"])
 
-# %%
-converse(["Hello", "I had a question about computer science", "can you suggest a course that I would like?", "overview", "academic", "quit"])
+# # %% [markdown]
+# # Converse with user
 
-# %% [markdown]
-# Converse with user
+# # %%
+# utterance = None
+# # s0 = {"u": [], "a": [], "task": []}
+# s0 = ((), (), ()) # represents utterances, actions, tasks
+# while(utterance != "quit"):
+#     s1 = understand(utterance, s0)
+#     #print(s1)
+#     plans = possible(s1)
+#     action = deliberate(plans, s1)
+#     s0 = do(action, s1)
+#     #print(s0)
+#     utterance = input(action)
 
-# %%
-utterance = None
-# s0 = {"u": [], "a": [], "task": []}
-s0 = ((), (), ()) # represents utterances, actions, tasks
-while(utterance != "quit"):
-    s1 = understand(utterance, s0)
-    #print(s1)
-    plans = possible(s1)
-    action = deliberate(plans, s1)
-    s0 = do(action, s1)
-    #print(s0)
-    utterance = input(action)
+# # %% [markdown]
+# # Simulate conversation between user and chatbot
 
-# %% [markdown]
-# Simulate conversation between user and chatbot
+# # %%
+# def simulate(state0):
+#     utterance = None
+#     while(utterance != "quit"):
+#         state1 = understand(utterance, state0)
+#         #print(state1)
+#         plans = possible(state1)
+#         action = deliberate(plans, state1)
+#         state0 = do(action, state1)
+#         #print(state0)
+#         print("Action: " + str(action))
+#         utterance = random.choice(userUtterance(state0))
+#         print("Uterrance: " + utterance)
 
-# %%
-def simulate(state0):
-    utterance = None
-    while(utterance != "quit"):
-        state1 = understand(utterance, state0)
-        #print(state1)
-        plans = possible(state1)
-        action = deliberate(plans, state1)
-        state0 = do(action, state1)
-        #print(state0)
-        print("Action: " + str(action))
-        utterance = random.choice(userUtterance(state0))
-        print("Uterrance: " + utterance)
+# # %%
+# # s0 = {"u": [], "a": [], "task": []}
+# s0 = ((), (), ()) # represents utterances, actions, tasks
+# simulate(s0)
 
-# %%
-# s0 = {"u": [], "a": [], "task": []}
-s0 = ((), (), ()) # represents utterances, actions, tasks
-simulate(s0)
+# # %% [markdown]
+# # # Machine Learning
 
-# %% [markdown]
-# # Machine Learning
+# # %% [markdown]
+# # Define reward function
 
-# %% [markdown]
-# Define reward function
-
-# %%
-leafNodes = [c1, c2, c3, c4, c5, c6]
-def getReward(oldState, action, newState):
-    reward = -1
-    # action is in dataframe
-    if (action in df.values):
-        reward += 5
-    else:
-        # action is a leaf node
-        for node in leafNodes:
-            if str(action) in node.val:
-                reward += 5
+# # %%
+# leafNodes = [c1, c2, c3, c4, c5, c6]
+# def getReward(oldState, action, newState):
+#     reward = -1
+#     # action is in dataframe
+#     if (action in df.values):
+#         reward += 5
+#     else:
+#         # action is a leaf node
+#         for node in leafNodes:
+#             if str(action) in node.val:
+#                 reward += 5
             
-    return reward
+#     return reward
 
-# %%
-# getReward(4), getReward("Data Structures")
+# # %%
+# # getReward(4), getReward("Data Structures")
 
-# %% [markdown]
-# Determine if state is terminated
+# # %% [markdown]
+# # Determine if state is terminated
 
-# %%
-def is_terminated(state):
-    if len(state[utterances]) == 0:
-        return False
-    elif state[utterances][most_recent] == "quit":
-        return True
-    return False
+# # %%
+# def is_terminated(state):
+#     if len(state[utterances]) == 0:
+#         return False
+#     elif state[utterances][most_recent] == "quit":
+#         return True
+#     return False
 
-# %% [markdown]
-# Define Q-actions
+# # %% [markdown]
+# # Define Q-actions
 
-# %%
-def q_action(state, actions, epsilon):
-    if random.random() < epsilon:
-        max_q = None
-        for action in action:
-            #check to see if state action pair is in q_values dictionary, if not insert it
-            if (state, action) not in q_values:
-                q_values.setdefault((state, action), 0)
+# # %%
+# def q_action(state, actions, epsilon):
+#     if random.random() < epsilon:
+#         max_q = None
+#         for action in action:
+#             #check to see if state action pair is in q_values dictionary, if not insert it
+#             if (state, action) not in q_values:
+#                 q_values.setdefault((state, action), 0)
 
-            if q_values.get(state,action) > q_values.get(max_q):
-                max_q = (state,action)
+#             if q_values.get(state,action) > q_values.get(max_q):
+#                 max_q = (state,action)
                     
-        return max_q[1]
+#         return max_q[1]
                 
-    else:
-        return random.choice(actions)
+#     else:
+#         return random.choice(actions)
 
-# %% [markdown]
-# Training
+# # %% [markdown]
+# # Training
 
-# %%
-# dicitionary to hold Q-values for each state & action pair(key)
-q_values = {}
-# {(state, action) : q_value}
+# # %%
+# # dicitionary to hold Q-values for each state & action pair(key)
+# q_values = {}
+# # {(state, action) : q_value}
 
-# define training params
-epsilon = 0.9
-discount_factor = 0.9
-learning_rate = 0.9
+# # define training params
+# epsilon = 0.9
+# discount_factor = 0.9
+# learning_rate = 0.9
 
-default = 4
+# default = 4
 
-for episode in range(100):
-    # begin conversation and iterate till it finishes
-    # state0 = {"u": [], "a": [], "task": []}
-    state0 = ((), (), ())
-    utterance = None
+# for episode in range(100):
+#     # begin conversation and iterate till it finishes
+#     # state0 = {"u": [], "a": [], "task": []}
+#     state0 = ((), (), ())
+#     utterance = None
     
-    while(True):
-        # determine chatbot action
-        plans = possible(state0)
-        action = deliberate(plans, state0)
-        userTurnState = do(action, state0)
+#     while(True):
+#         # determine chatbot action
+#         plans = possible(state0)
+#         action = deliberate(plans, state0)
+#         userTurnState = do(action, state0)
         
-        # determine user utterance
-        utterance = random.choice(userUtterance(userTurnState))
-        # print(utterance)
-        nextState = understand(utterance, userTurnState)
+#         # determine user utterance
+#         utterance = random.choice(userUtterance(userTurnState))
+#         # print(utterance)
+#         nextState = understand(utterance, userTurnState)
         
-        # handle rewards (reward for action that transitions to nextState)
-        reward = getReward(state0, action, nextState)
-        old_q_value = q_values.get((state0, action), default)
-        
-        
-        # if newState is not in dictionary, add it
-        found = False
-        for k in q_values:
-            if(k[0] == nextState):
-                found = True
-                break
-        if not found:
-            q_values[(nextState, None)] = default
+#         # handle rewards (reward for action that transitions to nextState)
+#         reward = getReward(state0, action, nextState)
+#         old_q_value = q_values.get((state0, action), default)
         
         
-        # get q_values associated with next state
-        vals = []
-        for key, val in q_values.items():
-            if(key == nextState):
-                vals.append(val)
-        if(len(vals) == 0): vals.append(default)
-        td = reward + (discount_factor * max(vals) - old_q_value)
-        newqq = old_q_value + learning_rate * (td)
+#         # if newState is not in dictionary, add it
+#         found = False
+#         for k in q_values:
+#             if(k[0] == nextState):
+#                 found = True
+#                 break
+#         if not found:
+#             q_values[(nextState, None)] = default
+        
+        
+#         # get q_values associated with next state
+#         vals = []
+#         for key, val in q_values.items():
+#             if(key == nextState):
+#                 vals.append(val)
+#         if(len(vals) == 0): vals.append(default)
+#         td = reward + (discount_factor * max(vals) - old_q_value)
+#         newqq = old_q_value + learning_rate * (td)
                       
-        q_values.update({(state0, action):newqq})
+#         q_values.update({(state0, action):newqq})
                       
-        if utterance == "quit":
-            break
+#         if utterance == "quit":
+#             break
             
-        state0 = nextState
-        # print(state0)
+#         state0 = nextState
+#         # print(state0)
 
-print("Training complete!")
-# print q-value dictionary
-for key, value in sorted(q_values.items(), key=lambda kv: kv[1], reverse=True):
-        print(key,' : ',value)
+# print("Training complete!")
+# # print q-value dictionary
+# for key, value in sorted(q_values.items(), key=lambda kv: kv[1], reverse=True):
+#         print(key,' : ',value)
