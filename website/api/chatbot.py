@@ -498,11 +498,11 @@ queries = {'root': Query('root',
                            '01:198:111, then?',
                            '01:198:211, then?',
                            '01:198:109, then?'],
-                          lambda state: (fakeprint("There's nothing for me to repeat...")
-                          if len(list(filter(lambda x: x.name != 'root', state.qhistory)))<=1
-                          else state.setQuery(list(filter(lambda x : x.name != 'root', reversed(state.qhistory)))[0 if state.currQ.name=='root' else 1]),
-                                        #  print('lastq on ' + state.inputhistory[-1] + 'with query ' + state.currQ.name),
-                                         state.currQ.responses()['response'](state) if len(state.qhistory)<=1 else None))
+                          lambda state: (fakeprint(state, "There's nothing for me to repeat...")
+                          if len([x for x in reversed(state.qhistory) if x.name not in ['root','lastq']])<1
+                          else state.setQuery([x for x in reversed(state.qhistory) if x.name not in ['root','lastq']][0]),
+                                        #  print('lastq on ' + state.inputhistory[-1] + 'with query ' + state.currQ.name, 'list', [x for x in reversed(state.qhistory) if x.name not in ['root','lastq']]),
+                                         state.currQ.responses()['response'](state) if len([x for x in reversed(state.qhistory) if x.name not in ['root','lastq']])>=1 else None))
            }
 
 
