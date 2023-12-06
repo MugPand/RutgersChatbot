@@ -38,3 +38,7 @@ Our goal was to extend the capabilities of the chatbot into a more comprehensive
 
 ## Acknowledgements
 We want to thank Dr. Matthew Stone for his assistance on this project throughout the semester and for giving us the opportunity to work on this course planning chatbot!
+
+
+## Final Poster
+![Final Poster](IRT_Poster.png)
